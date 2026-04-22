@@ -219,26 +219,56 @@ def get_all_resumes():
 
 # ===================== GET SINGLE =====================
 
-def get_single_resume(id):
-    user_id = int(get_jwt_identity())
+def get_single_resume():
+    try:
+        user_id = get_jwt_identity()
 
-    resume = Resume.query.filter_by(resume_id=id, user_id=user_id).first()
+        # ✅ Get id from query params
+        resume_id = request.args.get('id')
 
-    if not resume:
-        return jsonify({"message": "Not found"}), 404
+        # ❌ Validate id
+        if not resume_id:
+            return jsonify({
+                "message": "resume id is required"
+            }), 400
 
-    return jsonify({
-        "resume_id": resume.resume_id,
-        "full_name": resume.full_name,
-        "email": resume.email,
-        "phone": resume.phone,
-        "location": resume.location,
-        "experience": [exp.to_dict() for exp in resume.experiences],
-        "education": [edu.to_dict() for edu in resume.educations],
-        "professional_summary": resume.professional_summary,
-        "skills": resume.skills.split(",") if resume.skills else []
-    }), 200
+        # convert to int safely
+        try:
+            resume_id = int(resume_id)
+        except ValueError:
+            return jsonify({
+                "message": "Invalid resume id"
+            }), 400
 
+        # ✅ Fetch resume
+        resume = Resume.query.filter_by(
+            resume_id=resume_id,
+            user_id=user_id
+        ).first()
+
+        if not resume:
+            return jsonify({
+                "message": "Not found"
+            }), 404
+
+        # ✅ Response
+        return jsonify({
+            "resume_id": resume.resume_id,
+            "full_name": resume.full_name,
+            "email": resume.email,
+            "phone": resume.phone,
+            "location": resume.location,
+            "experience": [exp.to_dict() for exp in resume.experiences],
+            "education": [edu.to_dict() for edu in resume.educations],
+            "professional_summary": resume.professional_summary,
+            "skills": resume.skills.split(",") if resume.skills else []
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "message": "Something went wrong",
+            "error": str(e)
+        }), 500
 
 # ===================== UPDATE =====================
 
