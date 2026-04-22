@@ -219,28 +219,19 @@ def get_all_resumes():
 
 # ===================== GET SINGLE =====================
 
-def get_single_resume():
+def get_single_resume(id):
     try:
         user_id = get_jwt_identity()
 
-        # ✅ Get id from query params
-        resume_id = request.args.get('id')
-
-        # ❌ Validate id
-        if not resume_id:
-            return jsonify({
-                "message": "resume id is required"
-            }), 400
-
-        # convert to int safely
+        # ✅ convert route param safely
         try:
-            resume_id = int(resume_id)
-        except ValueError:
+            resume_id = int(id)
+        except (ValueError, TypeError):
             return jsonify({
                 "message": "Invalid resume id"
             }), 400
 
-        # ✅ Fetch resume
+        # ✅ Fetch resume (IMPORTANT: use resume_id, not id)
         resume = Resume.query.filter_by(
             resume_id=resume_id,
             user_id=user_id
@@ -251,6 +242,15 @@ def get_single_resume():
                 "message": "Not found"
             }), 404
 
+        # ✅ Safe handling for relationships
+        experience_data = [
+            exp.to_dict() for exp in (resume.experiences or [])
+        ]
+
+        education_data = [
+            edu.to_dict() for edu in (resume.educations or [])
+        ]
+
         # ✅ Response
         return jsonify({
             "resume_id": resume.resume_id,
@@ -258,8 +258,8 @@ def get_single_resume():
             "email": resume.email,
             "phone": resume.phone,
             "location": resume.location,
-            "experience": [exp.to_dict() for exp in resume.experiences],
-            "education": [edu.to_dict() for edu in resume.educations],
+            "experience": experience_data,
+            "education": education_data,
             "professional_summary": resume.professional_summary,
             "skills": resume.skills.split(",") if resume.skills else []
         }), 200
@@ -269,7 +269,6 @@ def get_single_resume():
             "message": "Something went wrong",
             "error": str(e)
         }), 500
-
 # ===================== UPDATE =====================
 
 def update_resume(id):
