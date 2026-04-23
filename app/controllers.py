@@ -19,12 +19,12 @@ def signup():
 
     errors = validate_signup(data)
     if errors:
-        return jsonify({"message": "Validation failed", "errors": errors}), 400
+        return jsonify({"error": "Validation failed", "errors": errors}), 400
 
     email = data.get("email").lower()
 
     if User.query.filter_by(email=email).first():
-        return jsonify({"message": "User already exists"}), 400
+        return jsonify({"error": "User already exists"}), 400
 
     user = User(
         name=data.get("name"),
@@ -57,7 +57,7 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if not user or not check_password_hash(user.password, password):
-        return jsonify({"message": "Invalid credentials"}), 401
+        return jsonify({"error": "Invalid credentials"}), 401
 
     return jsonify({
         "message": "Login successful",
@@ -84,7 +84,7 @@ def create_resume():
 
     errors = validate_resume(data)
     if errors:
-        return jsonify({"message": "Validation failed", "errors": errors}), 400
+        return jsonify({"error": "Validation failed", "errors": errors}), 400
 
     try:
         resume = Resume(
@@ -178,7 +178,7 @@ def get_all_resumes():
 
         if not user_id:
             return jsonify({
-                "message": "Unauthorized access"
+                "error": "Unauthorized access"
             }), 401
 
         # ✅ Fetch resumes for that user
@@ -187,7 +187,7 @@ def get_all_resumes():
         # ✅ If no data found
         if not resumes:
             return jsonify({
-                "message": "No resumes found",
+                "error": "No resumes found",
                 "count": 0,
                 "data": []
             }), 200
@@ -228,7 +228,7 @@ def get_single_resume(id):
             resume_id = int(id)
         except (ValueError, TypeError):
             return jsonify({
-                "message": "Invalid resume id"
+                "error": "Invalid resume id"
             }), 400
 
         # ✅ Fetch resume (IMPORTANT: use resume_id, not id)
@@ -239,7 +239,7 @@ def get_single_resume(id):
 
         if not resume:
             return jsonify({
-                "message": "Not found"
+                "error": "Not found"
             }), 404
 
         # ✅ Safe handling for relationships
@@ -300,14 +300,14 @@ def update_resume(id):
     resume = Resume.query.filter_by(resume_id=id, user_id=user_id).first()
 
     if not resume:
-        return jsonify({"message": "Not found"}), 404
+        return jsonify({"error": "Not found"}), 404
 
     # ✅ validate email if present
     if "email" in data:
         from .validators import validate_email
         email_error = validate_email(data.get("email"))
         if email_error:
-            return jsonify({"message": email_error}), 400
+            return jsonify({"error": email_error}), 400
 
     # ✅ BASIC FIELDS
     resume.full_name = clean_string(data.get('full_name', resume.full_name))
@@ -403,7 +403,7 @@ def delete_resume(id):
     resume = Resume.query.filter_by(resume_id=id, user_id=user_id).first()
 
     if not resume:
-        return jsonify({"message": "Not found"}), 404
+        return jsonify({"error": "Not found"}), 404
 
     db.session.delete(resume)
     db.session.commit()
