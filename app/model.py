@@ -93,6 +93,13 @@ class Project(db.Model):
 
     title = db.Column(db.String(150))
     description = db.Column(db.Text)
+    
+    def to_dict(self):
+        return {
+            "id" : self.project_id,
+            "title" : self.title,
+            "description" : self.description
+        }
 
 
 # ===================== ACHIEVEMENT =====================
@@ -105,6 +112,13 @@ class Achievement(db.Model):
 
     title = db.Column(db.String(150))
     description = db.Column(db.Text)
+    
+    def to_dict(self):
+        return {
+            "id" : self.achievement_id,
+            "title" : self.title,
+            "description" : self.description
+        }    
 
 # ===================== LANGUAGE =====================
 
@@ -115,6 +129,12 @@ class Language(db.Model):
     resume_id = db.Column(db.Integer, db.ForeignKey('resumes.resume_id'), nullable=False, index=True)
 
     language_name = db.Column(db.String(50))
+    
+    def to_dict(self):
+        return {
+            "id" : self.language_id,
+            "language_name" : self.language_name
+        }   
 
    
 # ===================== HOBBY =====================
@@ -126,4 +146,12 @@ class Hobby(db.Model):
     resume_id = db.Column(db.Integer, db.ForeignKey('resumes.resume_id'), nullable=False,index=True)
 
     hobby_name = db.Column(db.String(100))
+    
+    def to_dict(self):
+        return{
+            "id" : self.hobby_id,
+            "hobby_name":self.hobby_name
+        }
+    
+
 

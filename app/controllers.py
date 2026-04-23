@@ -101,15 +101,15 @@ def create_resume():
         db.session.flush()
 
         # EXPERIENCE
-        for exp in data.get('experiences', []):
-            if exp.get('company') and exp.get('role'):
-                db.session.add(Experience(
-                    resume_id=resume.resume_id,
-                    company=clean_string(exp.get('company')),
-                    role=clean_string(exp.get('role')),
-                    duration=clean_string(exp.get('duration')),
-                    description=clean_string(exp.get('description'))
-                ))
+        for exp in data.get('experience', []):
+            db.session.add(Experience(
+                resume_id=resume.resume_id,
+                company=clean_string(exp.get('company')),
+                role=clean_string(exp.get('role')),
+                duration=clean_string(exp.get('duration')),
+                description=clean_string(exp.get('description'))
+            ))
+        print(data.get('experience'))            
 
         # EDUCATION
         for edu in data.get('education', []):
@@ -250,6 +250,23 @@ def get_single_resume(id):
         education_data = [
             edu.to_dict() for edu in (resume.educations or [])
         ]
+        
+        project_data = [
+            proj.to_dict() for proj in (resume.projects or [])
+         ]
+        
+        achievement_data = [
+            achiv.to_dict() for achiv in (resume.achievements or [])
+         ]
+        
+        hobbies_data = [
+            hobby.to_dict() for hobby in (resume.hobbies or [])
+         ]
+        languages_data = [
+            lang.to_dict() for lang in (resume.languages or [])
+         ]
+        
+        
 
         # ✅ Response
         return jsonify({
@@ -261,7 +278,12 @@ def get_single_resume(id):
             "experience": experience_data,
             "education": education_data,
             "professional_summary": resume.professional_summary,
-            "skills": resume.skills.split(",") if resume.skills else []
+            "skills": resume.skills if resume.skills else [],
+            "projects" : project_data,
+            "achievements" : achievement_data,
+            "hobbies" : hobbies_data,
+            "languages" : languages_data
+            
         }), 200
 
     except Exception as e:
@@ -280,26 +302,98 @@ def update_resume(id):
     if not resume:
         return jsonify({"message": "Not found"}), 404
 
-    # ✅ validate only if fields present
+    # ✅ validate email if present
     if "email" in data:
         from .validators import validate_email
         email_error = validate_email(data.get("email"))
         if email_error:
             return jsonify({"message": email_error}), 400
 
+    # ✅ BASIC FIELDS
     resume.full_name = clean_string(data.get('full_name', resume.full_name))
     resume.email = clean_string(data.get('email', resume.email))
     resume.phone = clean_string(data.get('phone', resume.phone))
     resume.location = clean_string(data.get('location', resume.location))
-    resume.professional_summary = clean_string(data.get('professional_summary', resume.professional_summary))
+    resume.professional_summary = clean_string(
+        data.get('professional_summary', resume.professional_summary)
+    )
 
+    # ✅ SKILLS (JSON)
     if 'skills' in data and isinstance(data['skills'], list):
-        resume.skills = ",".join(data['skills'])
+        resume.skills = data['skills']
 
+    # ===================== EXPERIENCE =====================
+    Experience.query.filter_by(resume_id=resume.resume_id).delete()
+
+    for exp in data.get('experience', []):
+        db.session.add(Experience(
+            resume_id=resume.resume_id,
+            company=clean_string(exp.get('company')),
+            role=clean_string(exp.get('role')),
+            duration=clean_string(exp.get('duration')),
+            description=clean_string(exp.get('description'))
+        ))
+
+    # ===================== EDUCATION =====================
+    Education.query.filter_by(resume_id=resume.resume_id).delete()
+
+    for edu in data.get('education', []):
+        db.session.add(Education(
+            resume_id=resume.resume_id,
+            degree=clean_string(edu.get('degree')),
+            institution=clean_string(edu.get('institution')),
+            year=clean_string(edu.get('year'))
+        ))
+
+    # ===================== PROJECTS =====================
+    Project.query.filter_by(resume_id=resume.resume_id).delete()
+
+    for proj in data.get('projects', []):
+        db.session.add(Project(
+            resume_id=resume.resume_id,
+            title=clean_string(proj.get('title')),
+            description=clean_string(proj.get('description'))
+        ))
+
+    # ===================== ACHIEVEMENTS =====================
+    Achievement.query.filter_by(resume_id=resume.resume_id).delete()
+
+    for ach in data.get('achievements', []):
+        db.session.add(Achievement(
+            resume_id=resume.resume_id,
+            title=clean_string(ach.get('title')),
+            description=clean_string(ach.get('description'))
+        ))
+
+    # ===================== LANGUAGES =====================
+    Language.query.filter_by(resume_id=resume.resume_id).delete()
+
+    for lang in data.get('languages', []):
+        db.session.add(Language(
+            resume_id=resume.resume_id,
+            language_name=clean_string(
+                lang if isinstance(lang, str) else lang.get('language_name')
+            )
+        ))
+
+    # ===================== HOBBIES =====================
+    Hobby.query.filter_by(resume_id=resume.resume_id).delete()
+
+    for hob in data.get('hobbies', []):
+        db.session.add(Hobby(
+            resume_id=resume.resume_id,
+            hobby_name=clean_string(
+                hob if isinstance(hob, str) else hob.get('hobby_name')
+            )
+        ))
+
+    # ✅ FINAL COMMIT
     db.session.commit()
 
-    return jsonify({"message": "Updated successfully"}), 200
-
+    return jsonify({
+        "message": "Updated successfully",
+        "resume_id": resume.resume_id
+    }), 200
 
 # ===================== DELETE =====================
 
